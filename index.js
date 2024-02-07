@@ -9,16 +9,14 @@ const port = process.env.PORT || 5000; // Use PORT environment variable or defau
 const route = require('./routes');
 const mongodb = require('./config/mongodb');
 
-route = express();
-route.use(cors());
-route.use(express.json());
-route.use(route);
+
 // Other middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser());
-// app.use(express.json());
-// app.use(route);
+app.use(express.json());
+app.use(cors());
+app.use(route);
 
 // MongoDB setup
 mongodb();
