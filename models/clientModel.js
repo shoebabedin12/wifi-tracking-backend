@@ -21,9 +21,13 @@ const clientSchema = new Schema({
     },
     status:{
         type: String,
-        default: "pending",
+        default: "Disconnect",
         required: true,
-    }
+    },
+    paymentDetails: {
+        type: Array,
+        default: [],
+      },
 },{
     timestamps: true,
 })

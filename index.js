@@ -11,8 +11,14 @@ const route = require('./routes');
 const mongodb = require('./config/mongodb');
 
 
-app.options("*", cors());
-app.use(cors({ origin: "http://localhost:3000" }));
+// app.options("*", cors());
+const corsOptions = {
+  origin: '*', // Allow requests from all domains and ports
+  credentials: true,  // If you're using cookies or other credentials
+};
+
+app.use(cors(corsOptions));
+
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 app.use(cookieParser())

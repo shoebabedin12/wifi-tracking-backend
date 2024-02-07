@@ -51,8 +51,10 @@ const allClient = async (req, res) => {
       macAddress: client.macAddress,
       device: client.device,
       roomNo: client.roomNo,
-      status: client.status
+      status: client.status,
+      paymentDetails: client.paymentDetails
     }));
+    
 
     res.json({
       message: "Fetch all data",
@@ -108,8 +110,37 @@ const deleteSingleClientController = async (req, res) => {
 };
 
 const addClientPaymentHistoryController = async (req, res) => {
-    console.log(req.body);
+  const { paymentDetails } = req.body;
+
+  try {
+    // Iterate through each payment data object
+    for (const paymentData of paymentDetails) {
+      const { clientId, paymentDate, paymentAmount } = paymentData;
+
+      // Find the client by ID
+      const existingClient = await Client.findById(clientId);
+
+      if (!existingClient) {
+        return res.status(404).json({ message: `Client with ID ${clientId} not found` });
+      }
+
+      // Push the payment data to the client's paymentDetails array
+      existingClient.paymentDetails.push({
+        paymentDate,
+        paymentAmount
+      });
+
+      // Save the updated client document
+      await existingClient.save();
+    }
+
+    return res.status(200).json({ message: "Payment details added successfully" });
+  } catch (error) {
+    console.error("Error adding payment details:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
 };
+
 
 module.exports = {
   addClientController,
