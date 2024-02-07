@@ -20,22 +20,6 @@ const mongodb = require('./config/mongodb');
 // app.use(cors(corsOptions));
 app.use(cors());
 app.options("*", cors());
-app.head("/api/v1", cors(), (req, res) => {
-  console.info("HEAD /simple-cors");
-  res.sendStatus(204);
-});
-app.get("/api/v1", cors(), (req, res) => {
-  console.info("GET /simple-cors");
-  res.json({
-    text: "Simple CORS requests are working. [GET]"
-  });
-});
-app.post("/api/v1", cors(), (req, res) => {
-  console.info("POST /simple-cors");
-  res.json({
-    text: "Simple CORS requests are working. [POST]"
-  });
-});
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 app.use(cookieParser())
