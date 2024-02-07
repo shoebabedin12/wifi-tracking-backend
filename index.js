@@ -11,8 +11,14 @@ const route = require('./routes');
 const mongodb = require('./config/mongodb');
 
 
+// app.options("*", cors());
+// const corsOptions = {
+//   origin: '*', 
+//   credentials: true, 
+// };
+
+// app.use(cors(corsOptions));
 app.use(cors());
-app.options("*", cors());
 
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
