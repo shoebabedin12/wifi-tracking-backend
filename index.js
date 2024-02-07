@@ -10,7 +10,7 @@ const route = require('./routes');
 const mongodb = require('./config/mongodb');
 
 const corsOptions = {
-  origin: /\.onrender\.com$/,
+  origin: /\.vercel\.app$/,
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",};
 app.use(cors(corsOptions));
 // Other middleware
