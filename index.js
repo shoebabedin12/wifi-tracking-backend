@@ -19,6 +19,7 @@ const mongodb = require('./config/mongodb');
 
 // app.use(cors(corsOptions));
 app.use(cors());
+app.options("*", cors());
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 app.use(cookieParser())
