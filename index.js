@@ -13,7 +13,7 @@ const mongodb = require('./config/mongodb');
 
 
 app.options("*", cors());
-app.use(cors());
+app.use(cors({ origin: ["http://localhost:3000", "https://wifi-tracking-frontend.vercel.app"] }));
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 app.use(cookieParser())
