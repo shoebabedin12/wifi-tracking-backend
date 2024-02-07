@@ -9,13 +9,15 @@ const port = process.env.PORT || 5000; // Use PORT environment variable or defau
 const route = require('./routes');
 const mongodb = require('./config/mongodb');
 
-
+const corsOptions = {
+  origin: /\.onrender\.com$/,
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",};
+app.use(cors(corsOptions));
 // Other middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(express.json());
-app.use(cors());
 app.use(route);
 
 // MongoDB setup
