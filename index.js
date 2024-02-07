@@ -9,12 +9,10 @@ const port = process.env.PORT || 5000; // Use PORT environment variable or defau
 const route = require('./routes');
 const mongodb = require('./config/mongodb');
 
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Origin', 'X-Requested-With', 'Accept', 'x-client-key', 'x-client-token', 'x-client-secret', 'Authorization'],
-  credentials: true
-}))
+route = express();
+route.use(cors());
+route.use(express.json());
+route.use(route);
 // Other middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
