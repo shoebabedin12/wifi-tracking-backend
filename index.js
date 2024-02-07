@@ -13,7 +13,7 @@ const mongodb = require('./config/mongodb');
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.use(cors({ origin: "http://localhost:3000", credentials: true })); // Enable CORS for localhost:3000
+app.use(cors({ origin: "http://localhost:3000", credentials: true, allowedHeaders: "Access-Control-Allow-Origin" })); // Enable CORS for localhost:3000
 app.use(route);
 
 // MongoDB connection
