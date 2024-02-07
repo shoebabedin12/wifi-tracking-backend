@@ -9,21 +9,16 @@ const port = process.env.PORT || 5000; // Use PORT environment variable or defau
 const route = require('./routes');
 const mongodb = require('./config/mongodb');
 
-// app.use(cors());
-// Define a middleware function to set CORS headers
-const setCorsHeaders = (req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://wifi-tracking-frontend.vercel.app');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  next();
-};
-
+app.use(cors({
+  origin: ['http://localhost:3000', 'https://wifi-tracking-frontend.vercel.app'],
+  credentials: true // Enable CORS with credentials
+}));
+app.options("*", cors());
 // Other middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(express.json());
-app.options(route, setCorsHeaders);
 app.use(route);
 
 // MongoDB setup
