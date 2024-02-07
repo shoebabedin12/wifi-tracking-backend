@@ -12,13 +12,8 @@ const mongodb = require('./config/mongodb');
 
 
 
-app.use(cors({
-  origin: ["http://localhost:3000", "https://wifi-tracking-frontend.vercel.app"],
-  credentials: true // Enable credentials if needed
-}));
-
-// Enable preflight requests for all routes
 app.options("*", cors());
+app.use(cors({ origin:  "https://wifi-tracking-frontend.vercel.app" }));
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 app.use(cookieParser())
