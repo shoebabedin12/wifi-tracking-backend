@@ -9,11 +9,13 @@ const port = process.env.PORT || 5000; // Use PORT environment variable or defau
 const route = require('./routes');
 const mongodb = require('./config/mongodb');
 
-app.use(cors({
-  origin: ['http://localhost:3000', 'https://wifi-tracking-frontend.vercel.app'],
-  credentials: true // Enable CORS with credentials
-}));
-app.options("*", cors());
+const corsOptions ={
+  origin:'*', 
+  credentials:true,            //access-control-allow-credentials:true
+  optionSuccessStatus:200,
+}
+
+app.use(cors(corsOptions)) 
 // Other middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
