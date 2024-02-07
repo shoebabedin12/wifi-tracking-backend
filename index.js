@@ -17,8 +17,8 @@ route.use(route);
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.use(express.json());
-app.use(route);
+// app.use(express.json());
+// app.use(route);
 
 // MongoDB setup
 mongodb();
