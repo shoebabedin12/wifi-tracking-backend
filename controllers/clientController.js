@@ -54,7 +54,6 @@ const allClient = async (req, res) => {
       status: client.status,
       paymentDetails: client.paymentDetails
     }));
-    
 
     res.json({
       message: "Fetch all data",
@@ -110,42 +109,154 @@ const deleteSingleClientController = async (req, res) => {
 };
 
 const addClientPaymentHistoryController = async (req, res) => {
-  const { paymentDetails } = req.body;
-
+  const { clientId } = req.body;
+  console.log(req.body);
   try {
-    // Iterate through each payment data object
-    for (const paymentData of paymentDetails) {
-      const { clientId, paymentDate, paymentAmount } = paymentData;
-
-      // Find the client by ID
-      const existingClient = await Client.findById(clientId);
-
-      if (!existingClient) {
-        return res.status(404).json({ message: `Client with ID ${clientId} not found` });
-      }
-
-      // Push the payment data to the client's paymentDetails array
-      existingClient.paymentDetails.push({
-        paymentDate,
-        paymentAmount
-      });
-
-      // Save the updated client document
-      await existingClient.save();
+    if (!clientId) {
+      return res.status(400).json({ message: "Invalid client ID" });
     }
 
-    return res.status(200).json({ message: "Payment details added successfully" });
+    const existingClient = await Client.findById(clientId);
+
+    if (!existingClient) {
+      return res
+        .status(404)
+        .json({ message: `Client with ID ${clientId} not found` });
+    }
+
+    // Assuming paymentDate and paymentAmount are obtained from somewhere in your request body
+    const { paymentDate, paymentAmount, paymentStatus } = req.body;
+
+    // Push the payment data to the client's paymentDetails array
+    existingClient.paymentDetails.push({
+      paymentDate,
+      paymentAmount,
+      paymentStatus
+    });
+
+    // Save the updated client document
+    await existingClient.save();
+
+    return res
+      .status(200)
+      .json({ message: "Payment details added successfully" });
   } catch (error) {
     console.error("Error adding payment details:", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
+const getAllClientPaymentsController = async (req, res) => {
+  try {
+    // Fetch all users from the database using the Client model
+    const users = await Client.find();
+
+    // Get the current month and year
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1; // Month is zero-based, so add 1
+    const currentYear = currentDate.getFullYear();
+
+    // Filter users with pending payments for the current month
+    const usersWithPendingPayments = getUsersWithPendingPayments(users, currentMonth, currentYear);
+
+    // Extract user IDs and payment status
+    const pendingPayments = extractPendingPayments(usersWithPendingPayments);
+
+    // Send the user IDs and payment status as response
+    res.json({ pendingPayments });
+  } catch (error) {
+    // Handle any errors
+    console.error("Error fetching users with pending payments:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const getUsersWithPendingPayments = (users, currentMonth, currentYear) => {
+  return users.filter(user =>
+    user.paymentDetails &&
+    user.paymentDetails.some(payment =>
+      payment.paymentStatus === "pending" &&
+      new Date(payment.paymentDate).getMonth() + 1 === currentMonth &&
+      new Date(payment.paymentDate).getFullYear() === currentYear
+    )
+  );
+};
+
+const extractPendingPayments = (usersWithPendingPayments) => {
+  return usersWithPendingPayments.map(user => ({
+    userId: user._id, // Assuming user IDs are stored in the "_id" field
+    paymentStatus: user.paymentDetails.find(payment => payment.paymentStatus === "pending").paymentStatus
+  }));
+};
+
+
+const updatePaymentDetailsController = async (req, res) => {
+  try {
+    // Get the current month and year
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1; // Month is zero-based, so add 1
+    const currentYear = currentDate.getFullYear();
+
+    // Fetch all users from the database using the Client model
+    const users = await Client.find();
+
+    // Update paymentDetails data for each user
+    for (const user of users) {
+      let paymentDetails = user.paymentDetails || []; // Existing paymentDetails or empty array
+
+      // Check if paymentDetails for the current month already exist
+      const paymentExists = paymentDetails.some((payment) => {
+        const paymentDate = new Date(payment.paymentDate); // Define paymentDate here
+        return (
+          paymentDate.getMonth() + 1 === currentMonth &&
+          paymentDate.getFullYear() === currentYear
+        );
+      });
+
+      // If paymentDetails for the current month don't exist, add them
+      if (!paymentExists) {
+        // Add default or empty paymentDetails for the current month
+        const paymentDate = new Date(); // Define paymentDate here
+        paymentDetails.push({
+          paymentDate: paymentDate,
+          paymentAmount: "100",
+          paymentStatus: "pending" // Assuming default payment status is 'pending'
+          // You can add more fields as needed
+        });
+
+        // Update the user's paymentDetails in the database
+        await Client.findByIdAndUpdate(user._id, { paymentDetails });
+      }
+    }
+
+    // Send success response
+    res.json({ message: "Payment details updated successfully" });
+  } catch (error) {
+    // Handle errors
+    console.error("Error updating payment details:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+const deletePaymentDetailsController = async () => {
+  try {
+    const { id } = req.body;
+    console.log(req.body);
+    // const deletedClient = await Client.findByIdAndDelete({ _id: id });
+    // res.status(200).json({ message: "Client deleted successfully" });
+  } catch (error) {
+    // Handle errors
+    console.error("Error deleting client:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
 
 module.exports = {
   addClientController,
   allClient,
   updateClientController,
   deleteSingleClientController,
-  addClientPaymentHistoryController
+  addClientPaymentHistoryController,
+  getAllClientPaymentsController,updatePaymentDetailsController,deletePaymentDetailsController
 };
