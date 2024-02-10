@@ -10,6 +10,7 @@ const loginController = async (req, res) => {
   if (!isExistUser.length > 0) {
     res.status(404).json({ message: "User not found" });
   }
+  console.log(isExistUser);
   bcrypt.compare(password, isExistUser[0].password).then(function (result) {
     if (result) {
       res.json({

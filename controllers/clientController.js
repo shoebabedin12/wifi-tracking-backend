@@ -1,4 +1,53 @@
 const Client = require("../models/clientModel");
+const ClientPayment = require("../models/clientPayment");
+const cron = require('node-cron');
+
+
+const updatePaymentDetails = async () => {
+  try {
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1; 
+    const currentYear = currentDate.getFullYear();
+
+    const clients = await Client.find();
+
+    for (const client of clients) {
+      let paymentDetails = client.paymentDetails || []; 
+
+      const paymentExists = paymentDetails.some((payment) => {
+        const paymentDate = new Date(payment.paymentDate); 
+        return (
+          paymentDate.getMonth() + 1 === currentMonth &&
+          paymentDate.getFullYear() === currentYear
+        );
+      });
+
+      if (!paymentExists) {
+        const paymentDate = new Date(); 
+        const newClientPayment = await ClientPayment.create({
+          paymentDate: paymentDate,
+          paymentAmount: 100, 
+          paymentStatus: "pending", 
+        });
+
+        await newClientPayment.save();
+
+        client.paymentDetails.push(newClientPayment._id); 
+
+        await client.save();
+      }
+    }
+
+    console.log("Payment details updated successfully");
+  } catch (error) {
+    console.error("Error updating payment details:", error);
+  }
+};
+// Schedule the updatePaymentDetails function to run every month (first day of the month at 00:00)
+cron.schedule('0 0 1 * *', async () => {
+  console.log('Running updatePaymentDetails function...');
+  await updatePaymentDetails();
+});
 
 const addClientController = async (req, res) => {
   const clientsData = req.body.users;
@@ -28,12 +77,12 @@ const addClientController = async (req, res) => {
         name,
         macAddress,
         device,
-        roomNo
+        roomNo,
       });
 
       await newClient.save();
     }
-
+    await createClient();
     return res.status(200).json({ message: "Clients created successfully" });
   } catch (error) {
     console.error("Error creating clients:", error);
@@ -52,12 +101,12 @@ const allClient = async (req, res) => {
       device: client.device,
       roomNo: client.roomNo,
       status: client.status,
-      paymentDetails: client.paymentDetails
+      paymentDetails: client.paymentDetails,
     }));
 
     res.json({
       message: "Fetch all data",
-      data: clientsData
+      data: clientsData,
     });
   } catch (error) {
     console.error("Error fetching all clients:", error);
@@ -69,7 +118,7 @@ const updateClientController = async (req, res) => {
   const { device, key, macAddress, name, roomNo, status } = req.body;
   if (!device || !key || !macAddress || !name || !roomNo || !status) {
     return res.status(403).json({
-      message: "Missing or invalid parameters for updating client information"
+      message: "Missing or invalid parameters for updating client information",
     });
   }
   try {
@@ -88,7 +137,7 @@ const updateClientController = async (req, res) => {
     await existingClient.save();
 
     res.status(200).json({
-      success: `User ${existingClient.name} updated successfully`
+      success: `User ${existingClient.name} updated successfully`,
     });
   } catch (error) {
     console.error(error);
@@ -131,7 +180,7 @@ const addClientPaymentHistoryController = async (req, res) => {
     existingClient.paymentDetails.push({
       paymentDate,
       paymentAmount,
-      paymentStatus
+      paymentStatus,
     });
 
     // Save the updated client document
@@ -157,7 +206,11 @@ const getAllClientPaymentsController = async (req, res) => {
     const currentYear = currentDate.getFullYear();
 
     // Filter users with pending payments for the current month
-    const usersWithPendingPayments = getUsersWithPendingPayments(users, currentMonth, currentYear);
+    const usersWithPendingPayments = getUsersWithPendingPayments(
+      users,
+      currentMonth,
+      currentYear
+    );
 
     // Extract user IDs and payment status
     const pendingPayments = extractPendingPayments(usersWithPendingPayments);
@@ -172,71 +225,27 @@ const getAllClientPaymentsController = async (req, res) => {
 };
 
 const getUsersWithPendingPayments = (users, currentMonth, currentYear) => {
-  return users.filter(user =>
-    user.paymentDetails &&
-    user.paymentDetails.some(payment =>
-      payment.paymentStatus === "pending" &&
-      new Date(payment.paymentDate).getMonth() + 1 === currentMonth &&
-      new Date(payment.paymentDate).getFullYear() === currentYear
-    )
+  return users.filter(
+    (user) =>
+      user.paymentDetails &&
+      user.paymentDetails.some(
+        (payment) =>
+          payment.paymentStatus === "pending" &&
+          new Date(payment.paymentDate).getMonth() + 1 === currentMonth &&
+          new Date(payment.paymentDate).getFullYear() === currentYear
+      )
   );
 };
 
 const extractPendingPayments = (usersWithPendingPayments) => {
-  return usersWithPendingPayments.map(user => ({
-    userId: user._id, // Assuming user IDs are stored in the "_id" field
-    paymentStatus: user.paymentDetails.find(payment => payment.paymentStatus === "pending").paymentStatus
+  return usersWithPendingPayments.map((user) => ({
+    userId: user._id, 
+    paymentStatus: user.paymentDetails.find(
+      (payment) => payment.paymentStatus === "pending"
+    ).paymentStatus,
   }));
 };
 
-
-const updatePaymentDetailsController = async (req, res) => {
-  try {
-    // Get the current month and year
-    const currentDate = new Date();
-    const currentMonth = currentDate.getMonth() + 1; // Month is zero-based, so add 1
-    const currentYear = currentDate.getFullYear();
-
-    // Fetch all users from the database using the Client model
-    const users = await Client.find();
-
-    // Update paymentDetails data for each user
-    for (const user of users) {
-      let paymentDetails = user.paymentDetails || []; // Existing paymentDetails or empty array
-
-      // Check if paymentDetails for the current month already exist
-      const paymentExists = paymentDetails.some((payment) => {
-        const paymentDate = new Date(payment.paymentDate); // Define paymentDate here
-        return (
-          paymentDate.getMonth() + 1 === currentMonth &&
-          paymentDate.getFullYear() === currentYear
-        );
-      });
-
-      // If paymentDetails for the current month don't exist, add them
-      if (!paymentExists) {
-        // Add default or empty paymentDetails for the current month
-        const paymentDate = new Date(); // Define paymentDate here
-        paymentDetails.push({
-          paymentDate: paymentDate,
-          paymentAmount: "100",
-          paymentStatus: "pending" // Assuming default payment status is 'pending'
-          // You can add more fields as needed
-        });
-
-        // Update the user's paymentDetails in the database
-        await Client.findByIdAndUpdate(user._id, { paymentDetails });
-      }
-    }
-
-    // Send success response
-    res.json({ message: "Payment details updated successfully" });
-  } catch (error) {
-    // Handle errors
-    console.error("Error updating payment details:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
 
 
 const deletePaymentDetailsController = async () => {
@@ -250,7 +259,39 @@ const deletePaymentDetailsController = async () => {
     console.error("Error deleting client:", error);
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
+
+const updateSingleClientPaymentDetails = async (req, res) => {
+  try {
+    const { key, paymentDetailIndex, updatedPaymentDetail } = req.body;
+    const clientData = await Client.findById(key);
+
+    if (!clientData) {
+      return res.status(404).json({ message: "Client not found" });
+    }
+
+    const { paymentDate, paymentAmount, paymentStatus } = updatedPaymentDetail;
+
+    if (clientData.paymentDetails[paymentDetailIndex]) {
+      clientData.paymentDetails[paymentDetailIndex].paymentDate = paymentDate;
+      clientData.paymentDetails[paymentDetailIndex].paymentAmount =
+        paymentAmount;
+      clientData.paymentDetails[paymentDetailIndex].paymentStatus =
+        paymentStatus;
+    } else {
+      return res.status(404).json({ message: "Payment detail not found" });
+    }
+    console.log(clientData);
+    await clientData.save();
+    return res.status(200).json({
+      message: "Payment details updated successfully",
+      data: clientData,
+    });
+  } catch (error) {
+    console.error("Error updating client payment details:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 module.exports = {
   addClientController,
@@ -258,5 +299,8 @@ module.exports = {
   updateClientController,
   deleteSingleClientController,
   addClientPaymentHistoryController,
-  getAllClientPaymentsController,updatePaymentDetailsController,deletePaymentDetailsController
+  getAllClientPaymentsController,
+  updatePaymentDetails,
+  deletePaymentDetailsController,
+  updateSingleClientPaymentDetails,
 };
