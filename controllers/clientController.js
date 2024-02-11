@@ -2,45 +2,50 @@ const Client = require("../models/clientModel");
 const ClientPayment = require("../models/clientPayment");
 const cron = require("node-cron");
 
-const updatePaymentDetails = async () => {
+const updatePaymentDetails = async (client) => {
   try {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1;
     const currentYear = currentDate.getFullYear();
 
-    const clients = await Client.find();
+    let paymentDetails = client.paymentDetails || [];
+    const paymentExists = paymentDetails.some((payment) => {
+      const paymentDate = new Date(payment.paymentDate);
+      return (
+        paymentDate.getMonth() + 1 === currentMonth &&
+        paymentDate.getFullYear() === currentYear
+      );
+    });
 
-    for (const client of clients) {
-      let paymentDetails = client.paymentDetails || [];
-
-      const paymentExists = paymentDetails.some((payment) => {
-        const paymentDate = new Date(payment.paymentDate);
-        return (
-          paymentDate.getMonth() + 1 === currentMonth &&
-          paymentDate.getFullYear() === currentYear
-        );
+    if (!paymentExists && isClientCreatedInCurrentMonth(client, currentDate)) {
+      const paymentDate = new Date();
+      const newClientPayment = await ClientPayment.create({
+        paymentDate: paymentDate,
+        paymentAmount: 100,
+        paymentStatus: "pending"
       });
 
-      if (!paymentExists) {
-        const paymentDate = new Date();
-        const newClientPayment = await ClientPayment.create({
-          paymentDate: paymentDate,
-          paymentAmount: 100,
-          paymentStatus: "pending"
-        });
+      await newClientPayment.save();
 
-        await newClientPayment.save();
+      client.paymentDetails.push(newClientPayment._id);
 
-        client.paymentDetails.push(newClientPayment._id);
+      await client.save();
 
-        await client.save();
-      }
+      console.log("Payment details created successfully for client:", client.name);
+    } else {
+      console.log("Payment details already exist for client:", client.name);
     }
-
-    console.log("Payment details updated successfully");
   } catch (error) {
     console.error("Error updating payment details:", error);
   }
+};
+
+const isClientCreatedInCurrentMonth = (client, currentDate) => {
+  const clientCreationDate = new Date(client.createdAt);
+  return (
+    clientCreationDate.getMonth() === currentDate.getMonth() &&
+    clientCreationDate.getFullYear() === currentDate.getFullYear()
+  );
 };
 // Schedule the updatePaymentDetails function to run every month (first day of the month at 00:00)
 cron.schedule("0 0 1 * *", async () => {
@@ -92,14 +97,19 @@ const addClientController = async (req, res) => {
       });
 
       await newClient.save();
+
+      // Update payment details after saving the new client
+      await updatePaymentDetails(newClient);
+
     }
-    await updatePaymentDetails();
     return res.status(200).json({ message: "Clients created successfully" });
   } catch (error) {
     console.error("Error creating clients:", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+
 
 const allClient = async (req, res) => {
   try {
@@ -272,7 +282,6 @@ const deletePaymentDetailsController = async () => {
 
 const updateSingleClientPaymentDetails = async (req, res) => {
   try {
-
     const { key, paymentHistoryId, updatedPaymentDetail } = req.body;
 
     if (!key || !paymentHistoryId || !updatedPaymentDetail) {
@@ -281,13 +290,15 @@ const updateSingleClientPaymentDetails = async (req, res) => {
 
     // Update the payment details of the specified client
     const client = await ClientPayment.findOneAndUpdate(
-      { _id: paymentHistoryId}, // Find the client with the given key and matching paymentHistoryId
+      { _id: paymentHistoryId }, // Find the client with the given key and matching paymentHistoryId
       { $set: { paymentStatus: updatedPaymentDetail.paymentStatus } }, // Update the matching payment detail
       { new: true } // Return the updated document
     );
 
     if (!client) {
-      return res.status(404).json({ message: "Client or payment history not found" });
+      return res
+        .status(404)
+        .json({ message: "Client or payment history not found" });
     }
 
     res.json({ message: "Payment history updated successfully", client });
@@ -296,7 +307,6 @@ const updateSingleClientPaymentDetails = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 const deleteSingleClientPaymentDetails = async (req, res) => {
   try {
@@ -310,8 +320,6 @@ const deleteSingleClientPaymentDetails = async (req, res) => {
   }
 };
 
-
-
 module.exports = {
   addClientController,
   allClient,
@@ -322,5 +330,6 @@ module.exports = {
   updatePaymentDetails,
   deletePaymentDetailsController,
   updateSingleClientPaymentDetails,
-  deleteAllPaymentDetails,deleteSingleClientPaymentDetails
+  deleteAllPaymentDetails,
+  deleteSingleClientPaymentDetails
 };
