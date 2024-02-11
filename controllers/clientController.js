@@ -93,7 +93,7 @@ const addClientController = async (req, res) => {
 
       await newClient.save();
     }
-    await createClient();
+    await updatePaymentDetails();
     return res.status(200).json({ message: "Clients created successfully" });
   } catch (error) {
     console.error("Error creating clients:", error);
