@@ -9,7 +9,9 @@ const {
   getAllClientPaymentsController,
   deletePaymentDetailsController,
   updateSingleClientPaymentDetails,
-  updatePaymentDetails
+  updatePaymentDetails,
+  deleteAllPaymentDetails,
+  deleteSingleClientPaymentDetails
 } = require("../../controllers/clientController");
 
 // get request
@@ -22,6 +24,8 @@ router.post("/update-single-client-details", updateSingleClientPaymentDetails);
 // delete request
 router.delete("/delete-client", deleteSingleClientController);
 router.delete('/delete-payment-details', deletePaymentDetailsController)
+router.delete("/delete-single-client-details", deleteSingleClientPaymentDetails );
+router.delete("/delete-all", deleteAllPaymentDetails);
 // update request
 router.put("/update-client", updateClientController);
 
