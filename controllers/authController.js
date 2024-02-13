@@ -1,6 +1,33 @@
 const User = require("../models/userModels");
 const bcrypt = require("bcryptjs");
 
+const forgotPasswordController = async (req, res) => {
+  const { email, oldpassword, newPassword } = req.body;
+  try {
+    // Check if the user with the provided email exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if the provided old password matches the user's current password
+    const passwordMatch = await bcrypt.compare(oldpassword, user.password);
+    if (!passwordMatch) {
+      return res.status(400).json({ message: "Invalid old password" });
+    }
+
+    // Update the user's password with the new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedNewPassword;
+    await user.save();
+
+    return res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 const loginController = async (req, res) => {
   const { email, password, agreement } = req.body;
   if (!email || !password) {
@@ -67,4 +94,8 @@ const signupController = async (req, res) => {
   }
 };
 
-module.exports = { loginController, signupController };
+module.exports = {
+  loginController,
+  signupController,
+  forgotPasswordController
+};
