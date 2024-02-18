@@ -31,7 +31,10 @@ const updatePaymentDetails = async (client) => {
 
       await client.save();
 
-      console.log("Payment details created successfully for client:", client.name);
+      console.log(
+        "Payment details created successfully for client:",
+        client.name
+      );
     } else {
       console.log("Payment details already exist for client:", client.name);
     }
@@ -100,7 +103,6 @@ const addClientController = async (req, res) => {
 
       // Update payment details after saving the new client
       await updatePaymentDetails(newClient);
-
     }
     return res.status(200).json({ message: "Clients created successfully" });
   } catch (error) {
@@ -109,21 +111,31 @@ const addClientController = async (req, res) => {
   }
 };
 
-
-
 const allClient = async (req, res) => {
   try {
     const allClients = await Client.find().populate("paymentDetails");
 
-    const clientsData = allClients.map((client) => ({
-      key: client._id,
-      name: client.name,
-      macAddress: client.macAddress,
-      device: client.device,
-      roomNo: client.roomNo,
-      status: client.status,
-      paymentDetails: client.paymentDetails
-    }));
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth(); // Month is zero-based
+
+    const clientsData = allClients.map((client) => {
+      // Filter payment details for the current month
+      const currentMonthPayments = client.paymentDetails.filter((payment) => {
+        const paymentDate = new Date(payment.paymentDate);
+        return paymentDate.getMonth() === currentMonth;
+      });
+
+      return {
+        key: client._id,
+        name: client.name,
+        macAddress: client.macAddress,
+        device: client.device,
+        roomNo: client.roomNo,
+        status: client.status,
+        paymentStatus: currentMonthPayments[0].paymentStatus,
+        paymentDetails: client.paymentDetails
+      };
+    });
 
     res.json({
       message: "Fetch all data",
