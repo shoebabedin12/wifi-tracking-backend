@@ -1,4 +1,5 @@
 const Client = require("../models/clientModel");
+const clientPayment = require("../models/clientPayment");
 const ClientPayment = require("../models/clientPayment");
 const cron = require("node-cron");
 
@@ -43,6 +44,9 @@ const updatePaymentDetails = async (client) => {
   }
 };
 
+
+
+
 const isClientCreatedInCurrentMonth = (client, currentDate) => {
   const clientCreationDate = new Date(client.createdAt);
   return (
@@ -51,10 +55,14 @@ const isClientCreatedInCurrentMonth = (client, currentDate) => {
   );
 };
 // Schedule the updatePaymentDetails function to run every month (first day of the month at 00:00)
-cron.schedule("0 0 1 * *", async () => {
-  console.log("Running updatePaymentDetails function...");
-  await updatePaymentDetails();
-});
+// cron.schedule("*/2 * * * *", async () => {
+//   console.log("Running updatePaymentDetails function...");
+//   await updatePaymentDetails();
+// });
+
+// Schedule the updatePaymentDetails function to run every month (first day of the month at 00:00)
+
+
 
 const deleteAllPaymentDetails = async (req, res) => {
   try {
@@ -121,9 +129,12 @@ const allClient = async (req, res) => {
     const clientsData = allClients.map((client) => {
       // Filter payment details for the current month
       const currentMonthPayments = client.paymentDetails.filter((payment) => {
-        const paymentDate = new Date(payment.paymentDate);
+        const paymentDate = new Date(payment.paymentMonth);
         return paymentDate.getMonth() === currentMonth;
       });
+
+      console.log(currentMonthPayments);
+      const paymentStatus = currentMonthPayments.length > 0 ? currentMonthPayments[0].paymentStatus : "No payment";
 
       return {
         key: client._id,
@@ -132,7 +143,7 @@ const allClient = async (req, res) => {
         device: client.device,
         roomNo: client.roomNo,
         status: client.status,
-        paymentStatus: currentMonthPayments[0].paymentStatus,
+        paymentStatus: paymentStatus,
         paymentDetails: client.paymentDetails
       };
     });
@@ -191,9 +202,10 @@ const deleteSingleClientController = async (req, res) => {
 };
 
 const addClientPaymentHistoryController = async (req, res) => {
-  const { clientId } = req.body;
-  console.log(req.body);
+  
   try {
+    const { clientId, paymentDate, paymentMonth, paymentAmount, paymentStatus } = req.body;
+    
     if (!clientId) {
       return res.status(400).json({ message: "Invalid client ID" });
     }
@@ -206,18 +218,33 @@ const addClientPaymentHistoryController = async (req, res) => {
         .json({ message: `Client with ID ${clientId} not found` });
     }
 
-    // Assuming paymentDate and paymentAmount are obtained from somewhere in your request body
-    const { paymentDate, paymentAmount, paymentStatus } = req.body;
 
-    // Push the payment data to the client's paymentDetails array
-    existingClient.paymentDetails.push({
+
+    // existingClient.paymentDetails.push({
+    //   paymentDate,
+    //   paymentMonth,
+    //   paymentAmount,
+    //   paymentStatus
+    // });
+
+    // await existingClient.save();
+
+    const clientPayment = new ClientPayment({
+      clientId,
       paymentDate,
+      paymentMonth,
       paymentAmount,
       paymentStatus
     });
 
-    // Save the updated client document
-    await existingClient.save();
+    // Save the client payment record to the database
+    await clientPayment.save();
+
+     // Add the ClientPayment ID to the existingClient.paymentDetails array
+     existingClient.paymentDetails.push(clientPayment._id);
+
+     // Save the updated existingClient document
+     await existingClient.save();
 
     return res
       .status(200)
@@ -227,6 +254,8 @@ const addClientPaymentHistoryController = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+
 
 const getAllClientPaymentsController = async (req, res) => {
   try {

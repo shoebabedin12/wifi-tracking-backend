@@ -13,9 +13,11 @@ const {
   deleteSingleClientPaymentDetails,
   updatePaymentDetails
 } = require("../../controllers/clientController");
+const { validateClientPayment, authorizeClientPayment } = require("../../middleware/clientPaymentMiddleware");
+const { isAuthenticated } = require("../../middleware/authMiddleware");
 
 // get request
-router.get("/all-client", allClient);
+router.get("/all-client",  allClient);
 router.get("/all-client-payments-status", getAllClientPaymentsController);
 // post request
 router.post("/add-client", addClientController);
