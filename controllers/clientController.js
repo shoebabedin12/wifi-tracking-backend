@@ -134,7 +134,7 @@ const allClient = async (req, res) => {
       });
 
       console.log(currentMonthPayments);
-      const paymentStatus = currentMonthPayments.length > 0 ? currentMonthPayments[0].paymentStatus : "No payment";
+      const paymentStatus = currentMonthPayments.length > 0 ? currentMonthPayments[0].paymentStatus : "pending";
 
       return {
         key: client._id,
